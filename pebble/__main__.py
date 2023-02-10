@@ -18,7 +18,6 @@ def generate_project(context: Context) -> None:
     """
     try:
         cprint(f"Generating project in {script_dir}")
-        cprint(f"cookiecutter config {context.dict()}")
         cookiecutter(
             template=f"{script_dir}/template",
             extra_context=context.dict(),
@@ -33,8 +32,12 @@ def generate_project(context: Context) -> None:
     else:
         prompt_with_underline = colored(f"{script_dir}/README.md", color="cyan", attrs=["underline"])
         cprint(
-            f"🍺 Project successfully generated. You can read information about usage in {prompt_with_underline}"
+            f"🍺 Done. Now Run.You can read information about usage in {prompt_with_underline}"
         )
+        cprint("Now Run:")
+        cprint(f"  cd {context.project_name}", color="green")
+        cprint(f"  charm .", color="green")
+
 
 
 def main() -> None:

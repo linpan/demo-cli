@@ -4,7 +4,7 @@ from typing import Optional, Callable, Any
 
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator, ValidationError
-from termcolor import colored
+from termcolor import colored, cprint
 
 from pebble.model import (
     Context,
@@ -319,6 +319,22 @@ features_menu = MultiselectMenuModel(
                 )
             ),
         ),
+        MenuEntry(
+            code="enable_loguru",
+            cli_name="Loguru",
+            user_view="Add Loguru logger",
+            description=(
+                "{what} is a library which aims to bring enjoyable logging.\n"
+                "Loguru tries to make it both . support asynchronous".format(
+                    what=colored("Loguru", color="green"),
+                    why=colored(
+                        "pleasant and powerful",
+                        color="cyan",
+                        attrs=["underline"],
+                    ),
+                )
+            ),
+        ),
     ]
 )
 
@@ -412,12 +428,13 @@ def handle_cli(
                 "❯ Project name: ",
                 validator=SnakeCaseValidator(),
             )
-
+        context.project_name = context.project_name.strip()
         for menu in menus:
             if menu.need_ask(context):
                 context = menu.ask(context)
                 if context is None:
                     print("Project generation stopped. Goodbye!")
+
                     return
                 context = Context(**context.dict())
 

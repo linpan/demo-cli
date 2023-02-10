@@ -116,8 +116,8 @@ class SingularMenuModel(BaseMenuModel):
         if self.before_ask_fun is not None:
             chosen_entry = self.before_ask_fun(context)
             if isinstance(chosen_entry, str):
-                print("ssxxx", chosen_entry, self.entries)
-                self.entries = [entry for entry in self.entries if  chosen_entry in entry.available_orm]
+
+                self.entries = [entry for entry in self.entries if chosen_entry in entry.available_orm]
                 chosen_entry = None
 
         ctx_value = context.dict().get(self.code)

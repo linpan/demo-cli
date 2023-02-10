@@ -1,31 +1,8 @@
-# But if you import the models before calling SQLModel.metadata.create_all(), it will work:
-
+{%- if (cookiecutter.orm == "sa2") or ( cookiecutter.orm == "sqlmodel") %}
+## But if you import the models before calling SQLModel.metadata.create_all(), it will work:
+# manual add model in here
 # fixme from .user import  User
-
+{%- endif %}
+{%- if cookiecutter.orm == "beanie" %}
 # todo: beanies register models
-# import sys
-# from typing import Sequence, Type, TypeVar
-#
-# from beanie import Document
-#
-# # All database models must be imported here to be able to
-# # initialize them on startup.
-# from .url import ShortUrl
-# from .user import User
-#
-# DocType = TypeVar("DocType", bound=Document)
-#
-#
-# def gather_documents() -> Sequence[Type[DocType]]:
-#     """Returns a list of all MongoDB document models defined in `models` module."""
-#     from inspect import getmembers, isclass
-#
-#     return [
-#         doc
-#         for _, doc in getmembers(sys.modules[__name__], isclass)
-#         if issubclass(doc, Document) and doc.__name__ != "Document"
-#     ]
-
-# class DateTimeModelMixin(BaseModel):
-#     created_at: Optional[datetime] = Schema(..., alias="createdAt")
-#     updated_at: Optional[datetime] = Schema(..., alias="updatedAt")
+{%- endif %}

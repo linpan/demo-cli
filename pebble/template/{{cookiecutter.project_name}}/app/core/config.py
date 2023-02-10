@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import pytz
-from pydantic import BaseSettings, HttpUrl, MongoDsn
+from pydantic import BaseSettings, HttpUrl, MongoDsn, PostgresDsn, KafkaDsn, RedisDsn, AmqpDsn
 
 #
 # see https://github.com/IHosseini083/Shortify/blob/main/shortify/app/core/config.py
@@ -15,34 +15,40 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     DEBUG: bool = True
     PROJECT_NAME: str = "{{cookiecutter.project_name}}"
-    SENTRY_DSN: Optional[HttpUrl] = None
+
     ENVIRONMENT: str = "dev"
     VERSION: int = 2
-    DB_URI = "postgresql+asyncpg://hiro:rcts2020@localhost:5432/mock"
-    USE_CORRELATION_ID: bool = True
 
     USE_CORRELATION_ID: bool = True
-    # Logging
-    LOG_LEVEL: str = "INFO"
-    LOG_FILE_PATH: str = "logs/shortify.log"
 
-    POSTGRES_USER: str = 'hiro'
-    POSTGRES_PASSWORD: str = "rcts2020"
-    POSTGRES_SERVER: str = 'localhost'
-    POSTGRES_PORT:int= 5432
-    POSTGRES_DB :str = 'mock'
     TIME_ZONE: datetime.tzinfo = pytz.timezone("UTC")
 
-    # Database
-    MONGODB_URI: MongoDsn = "mongodb://localhost:27017/"  # type: ignore[assignment]
+    # Logging
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE_PATH: str = "logs/prod.log"
+
+    # postgres database
+    POSTGRES_URL: PostgresDsn = "postgresql+asyncpg://hiro:rcts2020@localhost:5432/mock"
+
+    # MONGODB Database
+    MONGODB_URI: MongoDsn = "mongodb://localhost:27017/"
+
+    # MySQL Database
+    MYSQL_URI: str = "mysql://username:password@server/db"
+    # Redis Database
+    REDIS_URL: RedisDsn = "redis://localhost:6379/0"
+
+    # Kafka Database
+    KAFKA_BROKER: KafkaDsn = "kafka://localhost:9092"
+    # RabbitMQ Queue
+    RABBIT_URI: AmqpDsn = "amqp://guest:guest@rabbitmq:5672//"
 
     # warning in production must be disabled
+    # Sentry
+    SENTRY_DSN: Optional[HttpUrl] = None
+
     REDOC_URL: Optional[str] = "/redoc"
     DOCS_URL: Optional[str] = "/docs"
-
-    @property
-    def pg_native_url(self) -> str:
-        return f"//{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     class Config:
         env_file = ".env"

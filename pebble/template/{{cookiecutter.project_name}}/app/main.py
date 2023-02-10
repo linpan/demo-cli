@@ -1,12 +1,11 @@
+import time
 from datetime import datetime
 import uvicorn as uvicorn
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.responses import ORJSONResponse
-from sqlalchemy import text
 from fastapi import status
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.cors import CORSMiddleware
-from loguru import logger
+from app.logger import init_logging
 from fastapi.exceptions import RequestValidationError
 from api.endpoints.api import api_router as api_router_v1
 from app.exceptons import APIValidationError
@@ -26,17 +25,16 @@ from app.db.mongodb_utils import connect_to_mongo, close_mongo_connection
 
 {%- endif %}
 
-import sentry_sdk
 
 from core.config import settings
-from app.db.session import get_session
 
+{%- if cookiecutter.enable_sentry == "True" %}
+import sentry_sdk
 from sentry_sdk.integrations.starlette import StarletteIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 
-{%- if cookiecutter.enable_sentry == "True" %}
 sentry_sdk.init(
-    dsn="https://examplePublicKey@o0.ingest.sentry.io/0",
+    dsn=settings.SENTRY_DSN,
     traces_sample_rate=1.0,
     integrations=[
         StarletteIntegration(transaction_style="endpoint"),
@@ -45,7 +43,7 @@ sentry_sdk.init(
 )
 {%- endif %}
 
-
+init_logging()
 # Core Application Instance
 app = FastAPI(
     debug=settings.DEBUG,
@@ -62,19 +60,11 @@ app = FastAPI(
 )
 
 
-@app.get("/demo", tags=["health"])
-async def demo(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(text("select * from user"))
-    await session.commit()
-    print(result.fetchall())
-    return 1
-
-
 @app.get("/health", tags=["health"])
 def healthcheck():
     return {"message": "ok"}
 
-
+# Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -84,7 +74,17 @@ app.add_middleware(
 )
 if settings.USE_CORRELATION_ID:
     from app.middlewares.correlation import CorrelationMiddleware
+
     app.add_middleware(CorrelationMiddleware)
+
+if settings.DEBUG:
+    @app.middleware("http")
+    async def add_process_time_header(request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        response.headers["X-Process-Time"] = str(process_time)
+        return response
 
 # Add Routers
 app.include_router(api_router_v1, prefix=settings.API_V1_STR)
@@ -133,23 +133,22 @@ async def http_exception_handler(_, exc: StarletteHTTPException) -> ORJSONRespon
         headers=exc.headers,
     )
 
-
 @app.exception_handler(RequestValidationError)
 async def custom_validation_exception_handler(
-    _,
-    exc: RequestValidationError,
+        _,
+        exc: RequestValidationError,
 ) -> ORJSONResponse:
     return ORJSONResponse(
         content=APIValidationError.from_pydantic(exc).dict(exclude_none=True),
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
     )
 
-def run_dev_server()->None:
+def run_dev_server() -> None:
     """Run the uvicorn server in development environment."""
     uvicorn.run(app,
                 host="127.0.0.1" if settings.DEBUG else "0.0.0.0",
                 port=800,
                 reload=settings.DEBUG)
 
-if __name__ == "__main__":
-    run_dev_server()
+    if __name__ == "__main__":
+        run_dev_server()
