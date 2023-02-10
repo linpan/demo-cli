@@ -9,18 +9,21 @@ from starlette.middleware.cors import CORSMiddleware
 from loguru import logger
 from fastapi.exceptions import RequestValidationError
 from api.endpoints.api import api_router as api_router_v1
-from app.utils.validation_error import APIValidationError
+from app.exceptons import APIValidationError
 
 {%- if cookiecutter.enable_kafka == "True" %}
 from app.utils.kafka_producerimport start_kafka, shutdown_kafka
+
 {%- endif %}
 
 {%- if (cookiecutter.orm == "tortoise") or (cookiecutter.orm == "beanie") %}
 from app.db.init_db import get_db
+
 {%- endif %}
 
 {%- if cookiecutter.orm == "mongo" %}
 from app.db.mongodb_utils import connect_to_mongo, close_mongo_connection
+
 {%- endif %}
 
 import sentry_sdk
@@ -30,7 +33,6 @@ from app.db.session import get_session
 
 from sentry_sdk.integrations.starlette import StarletteIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
-
 
 {%- if cookiecutter.enable_sentry == "True" %}
 sentry_sdk.init(
@@ -46,7 +48,17 @@ sentry_sdk.init(
 
 # Core Application Instance
 app = FastAPI(
+    debug=settings.DEBUG,
     default_response_class=ORJSONResponse,
+    docs_url=settings.DOCS_URL,
+    openapi_url=f"/api/{settings.API_V1_STR}/openapi.json",
+    redoc_url=settings.REDOC_URL,
+    responses={
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+            "description": "Unprocessable Entity (Validation Error)",
+            "model": APIValidationError,  # This will add OpenAPI schema to the docs
+        },
+    },
 )
 
 
@@ -60,7 +72,7 @@ async def demo(session: AsyncSession = Depends(get_session)):
 
 @app.get("/health", tags=["health"])
 def healthcheck():
-    return {"message": "ok", "timestamp": datetime.now().isoformat()}
+    return {"message": "ok"}
 
 
 app.add_middleware(
@@ -70,6 +82,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+if settings.USE_CORRELATION_ID:
+    from app.middlewares.correlation import CorrelationMiddleware
+    app.add_middleware(CorrelationMiddleware)
 
 # Add Routers
 app.include_router(api_router_v1, prefix=settings.API_V1_STR)
@@ -79,7 +94,6 @@ app.include_router(api_router_v1, prefix=settings.API_V1_STR)
 
 @app.on_event("startup")
 async def on_startup():
-
     logger.info("Application Started")
     {%- if (cookiecutter.orm == "tortoise") or (cookiecutter.orm == "beanie") %}
     await get_db()
@@ -93,22 +107,32 @@ async def on_startup():
     await start_kafka(app)
     {%- endif %}
 
+    @app.on_event("shutdown")
+    async def on_shutdown():
+        logger.info("Application Shutdown")
+        {%- if cookiecutter.orm == "mongo" %}
+        await close_mongo_connection()
+        {%- endif %}
 
+        {%- if cookiecutter.enable_kafka == "True" %}
+        await shutdown_kafka()
+        {%- endif %}
 
-@app.on_event("shutdown")
-async def on_shutdown():
-    logger.info("Application Shutdown")
-    {%- if cookiecutter.orm == "mongo" %}
-    await close_mongo_connection()
-    {%- endif %}
+        {%- if cookiecutter.enable_redis == "True" %}
+        await shutdown_redis(app)
+        {%- endif %}
 
-    {%- if cookiecutter.enable_kafka == "True" %}
-    await shutdown_kafka()
-    {%- endif %}
+# Custom HTTPException handler
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(_, exc: StarletteHTTPException) -> ORJSONResponse:
+    return ORJSONResponse(
+        content={
+            "message": exc.detail,
+        },
+        status_code=exc.status_code,
+        headers=exc.headers,
+    )
 
-    {%- if cookiecutter.enable_redis == "True" %}
-    await shutdown_redis(app)
-    {%- endif %}
 
 @app.exception_handler(RequestValidationError)
 async def custom_validation_exception_handler(
@@ -119,5 +143,13 @@ async def custom_validation_exception_handler(
         content=APIValidationError.from_pydantic(exc).dict(exclude_none=True),
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
     )
+
+def run_dev_server()->None:
+    """Run the uvicorn server in development environment."""
+    uvicorn.run(app,
+                host="127.0.0.1" if settings.DEBUG else "0.0.0.0",
+                port=800,
+                reload=settings.DEBUG)
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=5555)
+    run_dev_server()

@@ -12,7 +12,7 @@ from loguru._defaults import LOGURU_FORMAT
 
 class InterceptHandler(logging.Handler):
     """
-    Default handler from examples in loguru documentaion.
+    Default handler from examples in loguru docs.
     See https://loguru.readthedocs.io/en/stable/overview.html#entirely-compatible-with-standard-logging
     """
 

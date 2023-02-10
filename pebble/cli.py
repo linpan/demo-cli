@@ -38,7 +38,7 @@ def disable_orm(ctx: Context) -> MenuEntry:
     if ctx.db == "none":
         ctx.orm = "none"
         return SKIP_ENTRY
-    return None
+    return ctx.db
 
 
 db_menu = SingularMenuModel(
@@ -77,6 +77,7 @@ db_menu = SingularMenuModel(
                 driver="postgresql",
                 port=5432,
             ),
+            available_orm=["none", "sqlmodel", "sa2"]
         ),
 
         MenuEntry(
@@ -96,6 +97,7 @@ db_menu = SingularMenuModel(
                 driver="mongodb",
                 port=27017,
             ),
+            available_orm=["none", "beanie", "mongo"]
         ),
         MenuEntry(
             code="sqlite",
@@ -122,6 +124,7 @@ db_menu = SingularMenuModel(
                 driver="sqlite",
                 port=None,
             ),
+            available_orm=["none", "sqlmodel", "sa2"]
         ),
         MenuEntry(
             code="mysql",
@@ -141,6 +144,7 @@ db_menu = SingularMenuModel(
                 driver="mysql",
                 port=3306,
             ),
+            available_orm=["none", "sqlmodel", "sa2"]
         )
 
     ],
@@ -174,6 +178,7 @@ orm_menu = SingularMenuModel(
                     feature=colored("SQLAlchemy1.0", color="cyan"),
                 )
             ),
+            aavailable_orm=["sqlite", "postgresql", "mysql"]
         ),
         MenuEntry(
             code="sa2",
@@ -185,39 +190,43 @@ orm_menu = SingularMenuModel(
                     feature=colored("The SQLAlchemy SQL Toolkit", color="cyan"),
                 )
             ),
+            available_orm=["sqlite", "postgresql", "mysql"]
         ),
         MenuEntry(
             code="beanie",
             user_view="Beanie",
             description=(
-                "{what}  is an asynchronous Python object-document mapper (ODM) for MongoDB.\n"
+                "{what} is an asynchronous Python object-document mapper (ODM) for MongoDB.\n"
                 "It has a {feature} and a big community around it.".format(
                     what=colored("Beanie", color="green"),
                     feature=colored("Beanie", color="cyan"),
                 )
             ),
+            available_orm=["mongodb"]
         ),
         MenuEntry(
             code="tortoise",
             user_view="Tortoise",
             description=(
-                "{what} ORM is an easy-to-use asyncio ORM.\n"
+                "{what} ORM is an easy-to-use asyncio SQL ORM.\n"
                 "It has a {feature} and a big community around it.".format(
                     what=colored("Tortoise", color="green"),
                     feature=colored("Tortoise", color="cyan"),
                 )
             ),
+            available_orm=["sqlite", "postgresql", "mysql"]
         ),
         MenuEntry(
             code="mongo",
             user_view="Mongo",
             description=(
-                "{what} ORM is an easy-to-use asyncio ORM.\n"
-                "It has a {feature} and a big community around it.".format(
-                    what=colored("Tortoise", color="green"),
-                    feature=colored("Tortoise", color="cyan"),
+                "{what} is a popular NoSQL database.\n"
+                "uses JSON-like documents with optional schemas.".format(
+                    what=colored("Mongo", color="green"),
+                    feature=colored("Mongo", color="cyan"),
                 )
             ),
+            available_orm=["mongodb"]
         ),
     ],
 )
@@ -361,8 +370,8 @@ ci_menu = SingularMenuModel(
             code="jenkins",
             user_view="Jenkins",
             description=(
-                "Use this option if you use github as your VCS.\n"
-                "This option will create {file} file that adds test jobs for your project.".format(
+                "Use this option if you automate their build, test and release workflows \n"
+                "This option will create {file} yaml for your project.".format(
                     file=colored(
                         "`.jenkins.yaml`",
                         color="cyan",
@@ -374,8 +383,8 @@ ci_menu = SingularMenuModel(
             code="drone",
             user_view="Drone CI",
             description=(
-                "Use this option if you use github as your VCS.\n"
-                "This option will create {file} file that adds test jobs for your project.".format(
+                "Use this option if you automate their build, test and release workflows .\n"
+                "This option will create {file} yaml for your project.".format(
                     file=colored(
                         "`.drone.yaml`",
                         color="cyan",
@@ -393,7 +402,7 @@ def handle_cli(
 ):
     def inner_callback(**cli_args: Any):
         if cli_args["version"]:
-            print(version("fastapi_template"))
+            print(version("pebble"))
             exit(0)
 
         context = Context(**cli_args)
@@ -420,14 +429,14 @@ def handle_cli(
 
 
 def run_command(callback: Callable[[Context], None]) -> None:
-    menus: "list[BaseMenuModel]" = [db_menu,orm_menu, ci_menu, features_menu]
+    menus: "list[BaseMenuModel]" = [db_menu, orm_menu, features_menu, ci_menu]
 
     cmd = Command(
         None,
         params=[
             Option(
-                ["-n", "--name", "project_name"],
-                help="Name of your awesome project",
+                ["-n", "--new", "project_name"],
+                help="Create a new project",
             ),
             Option(
                 ["-V", "--version", "version"],

@@ -1,5 +1,5 @@
 from collections.abc import MutableMapping
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, List
 
 from pydantic import BaseModel
 import click
@@ -29,6 +29,7 @@ class MenuEntry(BaseModel):
     description: str
     is_hidden: Optional[Callable[["Context"], bool]]
     additional_info: Any
+    available_orm: Optional[List[str]] = [] # fix db <==> orm
 
     @property
     def generated_name(self) -> str:
@@ -114,6 +115,10 @@ class SingularMenuModel(BaseMenuModel):
         chosen_entry = None
         if self.before_ask_fun is not None:
             chosen_entry = self.before_ask_fun(context)
+            if isinstance(chosen_entry, str):
+                print("ssxxx", chosen_entry, self.entries)
+                self.entries = [entry for entry in self.entries if  chosen_entry in entry.available_orm]
+                chosen_entry = None
 
         ctx_value = context.dict().get(self.code)
         if ctx_value:
