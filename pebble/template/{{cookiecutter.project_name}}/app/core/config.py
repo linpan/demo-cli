@@ -3,21 +3,22 @@ from pathlib import Path
 from typing import Optional
 
 import pytz
-from pydantic import BaseSettings, HttpUrl, MongoDsn, PostgresDsn, KafkaDsn, RedisDsn, AmqpDsn
-
-#
-# see https://github.com/IHosseini083/Shortify/blob/main/shortify/app/core/config.py
-
-PROJECT_DIR = Path(__file__).parent.parent.parent
+from pydantic import BaseSettings, HttpUrl
+{%- if cookiecutter.db_info.name == "mongodb" %},MongoDsn {%- endif %}
+{%- if cookiecutter.db_info.name == "postgresql" %},PostgresDsn {%- endif %}
+{%- if cookiecutter.enable_redis == "True" %}, RedisDsn {%- endif %}
+{%- if cookiecutter.enable_kafka == "True" %}, KafkaDsn {%- endif %}
+{%- if cookiecutter.enable_rmq == "True" %}, AmqpDsn {%- endif %}
 
 
 class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     DEBUG: bool = True
+    PROJECT_DIR: Path = Path(__file__).parent.parent.parent
     PROJECT_NAME: str = "{{cookiecutter.project_name}}"
 
     ENVIRONMENT: str = "dev"
-    VERSION: int = 2
+    project_version: str = "0.1"
 
     USE_CORRELATION_ID: bool = True
 
@@ -25,36 +26,57 @@ class Settings(BaseSettings):
 
     # Logging
     LOG_LEVEL: str = "INFO"
-    LOG_FILE_PATH: str = "logs/prod.log"
+    LOG_FILE_PATH: str = "logs/{{cookiecutter.project_name}}.log"
 
+    {%- if cookiecutter.db_info.name == "postgresql" %}
     # postgres database
     POSTGRES_URL: PostgresDsn = "postgresql+asyncpg://hiro:rcts2020@localhost:5432/mock"
+    {%- endif %}
 
+    {%- if cookiecutter.db_info.name == "mongodb" %}
     # MONGODB Database
     MONGODB_URI: MongoDsn = "mongodb://localhost:27017/"
+    {%- endif %}
 
+    {%- if cookiecutter.db_info.name == "sqlite" %}
+    # SQlite Database SQLITE_SYNC_URL_PREFIX or SQLITE_SYNC_URL_PREFIX
+    SQlite_URI: str = "sqlite+aiosqlite:///db.sqlite3:?mode=memory&cache=shared&uri=true"
+    {%- endif %}
+
+    {%- if cookiecutter.db_info.name == "mysql" %}
     # MySQL Database
     MYSQL_URI: str = "mysql://username:password@server/db"
-    # Redis Database
-    REDIS_URL: RedisDsn = "redis://localhost:6379/0"
+    {%- endif %}
 
+    # Redis Database
+    {%- if cookiecutter.enable_redis == "True" %}
+    REDIS_URL: RedisDsn = "redis://localhost:6379/0"
+    {%- endif %}
+
+    {% if cookiecutter.enable_kafka == "True" %}
     # Kafka Database
     KAFKA_BROKER: KafkaDsn = "kafka://localhost:9092"
+    {%- endif %}
+    {%- if cookiecutter.enable_rmq == "True" %}
     # RabbitMQ Queue
     RABBIT_URI: AmqpDsn = "amqp://guest:guest@rabbitmq:5672//"
+    {%- endif %}
 
+    {%- if cookiecutter.enable_sentry == "True" %}
     # warning in production must be disabled
     # Sentry
     SENTRY_DSN: Optional[HttpUrl] = None
+    {%- endif %}
 
-    REDOC_URL: Optional[str] = "/redoc"
-    DOCS_URL: Optional[str] = "/docs"
+    REDOC_URL: Optional[str] = "/redoc" if DEBUG else None
+    DOCS_URL: Optional[str] = "/docs"  if DEBUG else None
 
     class Config:
-        env_file = ".env"
+        env_file = f".env"
         # Place your .env file under this path
         # env_file = "short/.env"
-        # env_prefix = "short_"
+        env_prefix = "dev_"
 
 
 settings = Settings()
+print(settings.POSTGRES_URL.replace("+asyncpg", ''))

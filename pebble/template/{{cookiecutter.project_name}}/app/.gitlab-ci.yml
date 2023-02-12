@@ -1,43 +1,33 @@
-repos:
-  - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.10.1
-    hooks:
-      - id: isort
-        args:
-          - "-l=88"
-          - "--multi-line=3"
-          - "--tc"
-          - "--up"
-          - "--force-grid-wrap=0"
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-docstring-first
-      - id: check-json
-      - id: check-yaml
-        exclude: (charts/*|.gitlab-ci.yml)
-      - id: debug-statements
-      - id: requirements-txt-fixer
-      - id: detect-private-key
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8
-        additional_dependencies: [ flake8-typing-imports==1.7.0 ]
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.991
-    hooks:
-      - id: mypy
-        name: Mypy typing checks
-  - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.10.0
-    hooks:
-      - id: python-check-blanket-noqa
-      - id: python-use-type-annotations
-  - repo: https://github.com/ambv/black
-    rev: 23.1a1
-    hooks:
-      - id: black
-        language_version: python3.9
+stages:
+  - "test"
+
+.test-template:
+  stage: test
+  image: python:3.9.16-slim-buster
+  tags:
+    - kubernetes-runner
+    - docker-runner
+  except:
+    - tags
+  before_script:
+    - pip install poetry
+    - poetry config virtualenvs.create false
+    - poetry install
+
+black:
+  extends:
+    - .test-template
+  script:
+    - black --check .
+
+flake8:
+  extends:
+    - .test-template
+  script:
+    - flake8 --count .
+
+mypy:
+  extends:
+    - .test-template
+  script:
+    - mypy .

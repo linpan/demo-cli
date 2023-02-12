@@ -10,14 +10,16 @@ readme = "README.md"
 python = "^3.9"
 fastapi = "^0.90.0"
 uvicorn = { version = "^0.18.3", extras = ["standard"] }
-pydantic = {version = "^1.10.2", extras = ["dotenv"]}
+pydantic = {extras = ["dotenv"], version = "^1.10.4"}
 yarl = "^1.8.1"
 ujson = "^5.5.0"
+pyzt = "^2022.7.1"
 httpx = "^0.23.3"
 anyio = "^3.6.1"
 pytest = "^6.2.5"
 pytest-env = "^0.6.2"
-
+structlog = "^22.3.0"
+greenlet = "2.0.2"
 {%- if cookiecutter.db_info.name == "postgresql" %}
 alembic = "^1.8.1"
 psycopg2-binary = "^2.9.5"

@@ -14,6 +14,7 @@ convention = {
 
 meta = MetaData(naming_convention=convention)
 
+
 async def async_main():
     async with async_engine.begin() as conn:
         await conn.run_sync(meta.create_all)

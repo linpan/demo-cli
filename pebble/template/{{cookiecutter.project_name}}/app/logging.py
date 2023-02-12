@@ -4,15 +4,11 @@
 import logging
 import sys
 from pprint import pformat
-
 from app.core.config import settings
-LOG_LEVEL = "DEBUG" if settings.DEBUG else settings.LOG_LEVEL
-# if you don't like imports of private modules
-# you can move it to typing.py module
-
 from loguru import logger
 from loguru._defaults import LOGURU_FORMAT
 
+LOG_LEVEL = "DEBUG" if settings.DEBUG else settings.LOG_LEVEL
 
 class InterceptHandler(logging.Handler):
     """

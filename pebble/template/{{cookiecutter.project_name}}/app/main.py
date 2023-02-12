@@ -1,8 +1,7 @@
 import time
-from datetime import datetime
 import uvicorn as uvicorn
 from fastapi import FastAPI, Depends, Request
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import ORJSONResponse,Response
 from fastapi import status
 from starlette.middleware.cors import CORSMiddleware
 from app.logger import init_logging
@@ -48,9 +47,9 @@ init_logging()
 app = FastAPI(
     debug=settings.DEBUG,
     default_response_class=ORJSONResponse,
-    docs_url=settings.DOCS_URL,
+    docs_url=settings.DOCS_URL if not settings.DEBUG else None,
     openapi_url=f"/api/{settings.API_V1_STR}/openapi.json",
-    redoc_url=settings.REDOC_URL,
+    redoc_url=settings.REDOC_URL if not settings.DEBUG else None,
     responses={
         status.HTTP_422_UNPROCESSABLE_ENTITY: {
             "description": "Unprocessable Entity (Validation Error)",
@@ -79,7 +78,7 @@ if settings.USE_CORRELATION_ID:
 
 if settings.DEBUG:
     @app.middleware("http")
-    async def add_process_time_header(request: Request, call_next):
+    async def add_process_time_header(request: Request, call_next)->Response:
         start_time = time.time()
         response = await call_next(request)
         process_time = time.time() - start_time
@@ -90,7 +89,6 @@ if settings.DEBUG:
 app.include_router(api_router_v1, prefix=settings.API_V1_STR)
 
 
-# todo  if settings.USE_CORRELATION_ID:
 
 @app.on_event("startup")
 async def on_startup():
@@ -122,6 +120,7 @@ async def on_startup():
         await shutdown_redis(app)
         {%- endif %}
 
+
 # Custom HTTPException handler
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(_, exc: StarletteHTTPException) -> ORJSONResponse:
@@ -147,7 +146,7 @@ def run_dev_server() -> None:
     """Run the uvicorn server in development environment."""
     uvicorn.run(app,
                 host="127.0.0.1" if settings.DEBUG else "0.0.0.0",
-                port=800,
+                port=8000,
                 reload=settings.DEBUG)
 
     if __name__ == "__main__":

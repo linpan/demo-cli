@@ -71,7 +71,7 @@ db_menu = SingularMenuModel(
             ),
             additional_info=DatabaseDSN(
                 name="postgresql",
-                image="postgres",
+                image="postgres:15.2-alpine",
                 async_driver="postgresql+asyncpg",
                 driver_short="postgres",
                 driver="postgresql",

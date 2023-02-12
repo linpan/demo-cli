@@ -1,10 +1,12 @@
-from starlette.datastructures import URL
-from starlette.responses import RedirectResponse
-from starlette.types import ASGIApp, Receive, Scope, Send
+from datetime import time
+from typing import Callable
+from starlette.requests import Request
+from starlette.responses import Response
 
 
-class ProcessTimeMiddleware:
-    def __init__(self, app: ASGIApp) -> None:
-        self.app = app
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+async def add_process_time_header(request: Request, call_next) -> Response:
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    return response

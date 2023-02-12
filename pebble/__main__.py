@@ -32,18 +32,15 @@ def generate_project(context: Context) -> None:
     else:
         prompt_with_underline = colored(f"{script_dir}/README.md", color="cyan", attrs=["underline"])
         cprint(
-            f"🍺 Done. Now Run.You can read information about usage in {prompt_with_underline}"
+            f"🍺 Done. Now Run. 👀You can read information about usage in {prompt_with_underline}"
         )
-        cprint("Now Run:")
+        cprint("🧵Now Run:")
         cprint(f"  cd {context.project_name}", color="green")
         cprint(f"  charm .", color="green")
 
 
-
 def main() -> None:
     """Starting entry."""
-    # cprint("apple", 'green', end=" ")
-    # cprint("ddd")
     run_command(generate_project)
 
 
