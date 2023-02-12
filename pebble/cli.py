@@ -218,12 +218,12 @@ orm_menu = SingularMenuModel(
         ),
         MenuEntry(
             code="mongo",
-            user_view="Mongo",
+            user_view="PyMongo",
             description=(
                 "{what} is a popular NoSQL database.\n"
                 "uses JSON-like documents with optional schemas.".format(
-                    what=colored("Mongo", color="green"),
-                    feature=colored("Mongo", color="cyan"),
+                    what=colored("PyMongo[Motor]", color="green"),
+                    feature=colored("PyMongo[Motor]", color="cyan"),
                 )
             ),
             available_orm=["mongodb"]
